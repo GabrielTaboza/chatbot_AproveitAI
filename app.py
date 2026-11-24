@@ -4,6 +4,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.output_parsers import StrOutputParser
 from database.banco import listar_alimentos
+from datetime import date
 
 # 1. Configuração da página da interface
 st.set_page_config(
@@ -214,29 +215,54 @@ st.sidebar.caption("Clique em um cenário abaixo para testar os requisitos da at
 
 prompt_rapido = None
 
+
 # Consultar alimentos cadastrados na geladeira
 if st.sidebar.button(
     "🥬 Usar alimentos da minha geladeira",
     use_container_width=True
 ):
-
     alimentos = listar_alimentos()
 
     if alimentos:
+        lista_alimentos = []
 
-        lista_alimentos = "\n".join(
-            [
-                f"- {a['nome']}: {a['quantidade']} {a['unidade']}"
-                for a in alimentos
-            ]
-        )
+        for a in alimentos:
+            validade = a["validade"]
+
+            if validade:
+                data_validade = date.fromisoformat(validade)
+                dias = (data_validade - date.today()).days
+
+                if dias < 0:
+                    situacao = "VENCIDO"
+                elif dias <= 3:
+                    situacao = "PRÓXIMO DO VENCIMENTO"
+                else:
+                    situacao = "Dentro da validade"
+
+                informacao_validade = (
+                    f"Validade: {validade} ({situacao})"
+                )
+            else:
+                informacao_validade = "Sem validade informada"
+
+            lista_alimentos.append(
+                f"- {a['nome']}: {a['quantidade']} "
+                f"{a['unidade']} | {informacao_validade}"
+            )
+
+        ingredientes = "\n".join(lista_alimentos)
 
         prompt_rapido = (
             "Estes são os alimentos cadastrados na minha geladeira:\n\n"
-            f"{lista_alimentos}\n\n"
-            "Sugira receitas que eu possa preparar utilizando "
-            "prioritariamente esses alimentos. "
-            "Informe também o que está faltando, se houver."
+            f"{ingredientes}\n\n"
+            "Sugira receitas utilizando prioritariamente os alimentos "
+            "que estão próximos do vencimento.\n"
+            "Não recomende o consumo de alimentos identificados como vencidos. "
+            "Avise sobre esses alimentos separadamente.\n"
+            "Para os alimentos dentro da validade, sugira receitas práticas "
+            "que ajudem a evitar desperdício.\n"
+            "Informe também os ingredientes que estão faltando, se houver."
         )
 
     else:

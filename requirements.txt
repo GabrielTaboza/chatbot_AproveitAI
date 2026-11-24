@@ -2,3 +2,8 @@
 streamlit
 langchain-google-genai
 langchain-core
+
+#inicia com: python3 -m streamlit run app.py --server.port 8501 --server.address 0.0.0.0
+
+
+#https://expert-computing-machine-979qvg7qwr653pxp-8501.app.github.dev/

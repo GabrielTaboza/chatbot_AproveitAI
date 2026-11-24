@@ -51,7 +51,8 @@ with st.form("form_alimento", clear_on_submit=True):
 
     validade = st.date_input(
         "Data de validade",
-        value=date.today()
+        value=date.today(),
+        disabled=not tem_validade
     )
 
     cadastrar = st.form_submit_button(
@@ -79,13 +80,48 @@ with st.form("form_alimento", clear_on_submit=True):
             st.success("Alimento cadastrado com sucesso!")
             st.rerun()
 
+st.divider()
+
+# Resumo da geladeira
+st.subheader("📊 Resumo da geladeira")
+
+alimentos = listar_alimentos()
+
+vencidos = 0
+proximos = 0
+em_dia = 0
+sem_validade = 0
+
+for alimento in alimentos:
+
+    if alimento["validade"]:
+
+        data_validade = date.fromisoformat(alimento["validade"])
+        dias = (data_validade - date.today()).days
+
+        if dias < 0:
+            vencidos += 1
+
+        elif dias <= 3:
+            proximos += 1
+
+        else:
+            em_dia += 1
+
+    else:
+        sem_validade += 1
+
+col1, col2, col3, col4 = st.columns(4)
+
+col1.metric("🔴 Vencidos", vencidos)
+col2.metric("🟡 Próximos", proximos)
+col3.metric("🟢 Em dia", em_dia)
+col4.metric("⚪ Sem validade", sem_validade)
 
 st.divider()
 
 # Listagem de alimentos
 st.subheader("Alimentos cadastrados")
-
-alimentos = listar_alimentos()
 
 if not alimentos:
 
@@ -111,15 +147,20 @@ else:
             with col3:
 
                 if alimento["validade"]:
+
                     st.write(f"Validade: {alimento['validade']}")
 
                     data = date.fromisoformat(alimento["validade"])
+                    dias = (data - date.today()).days
 
-                    if data < date.today():
+                    if dias < 0:
                         st.error("Validade vencida")
 
-                    elif (data - date.today()).days <= 3:
+                    elif dias <= 3:
                         st.warning("Próximo do vencimento")
+
+                    else:
+                        st.success("Dentro da validade")
 
                 else:
                     st.write("Sem validade informada")
@@ -182,7 +223,8 @@ else:
                 date.fromisoformat(alimento["validade"])
                 if alimento["validade"]
                 else date.today()
-            )
+            ),
+            disabled=not possui_validade
         )
 
         salvar = st.form_submit_button("Salvar alterações")
